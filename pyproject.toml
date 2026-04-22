@@ -1,0 +1,58 @@
+[project]
+name = "phdata-mle-project-challenge-2026-22ec952f6305"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.136.0",
+    "numpy>=2.4.4",
+    "pandas>=3.0.2",
+    "pydantic>=2.13.3",
+    "scikit-learn>=1.8.0",
+    "uvicorn>=0.45.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.24.0",
+    "hypothesis>=6.82.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.15.11",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+# E: pycodestyle (standard formatting)
+# F: Pyflakes (syntax errors, unused imports)
+# I: isort (automatically sorts your imports alphabetically)
+# UP: pyupgrade (upgrades older python syntax to modern 3.13 standards)
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
+testpaths = ["test"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html:test-results/coverage"
+]
+markers = [
+    "unit: Unit tests using TestClient",
+    "integration: Integration tests requiring running API",
+    "slow: Tests that take significant time"
+]
