@@ -20,3 +20,16 @@ def test_health_endpoint_integration(http_client):
     response_data = response.json()
     assert "status" in response_data
     assert response_data["status"] == "healthy"
+
+
+@pytest.mark.integration
+def test_predict_endpoint_missing_values_integration(http_client, sample_home_features):
+    """Test the /predict endpoint handles missing values via HTTP."""
+    sample_home_features["bathrooms"] = None
+    sample_home_features["sqft_lot"] = None
+    response = http_client.post("/predict", json=sample_home_features)
+    assert response.status_code == 200
+    response_data = response.json()
+    assert "predicted_price" in response_data
+    assert isinstance(response_data["predicted_price"], float)
+    assert response_data["predicted_price"] > 0
