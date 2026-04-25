@@ -1,26 +1,19 @@
-FROM python:3.10-slim
+FROM ghcr.io/astral-sh/uv:latest AS uv_bin
+FROM python:3.13-slim
 
 WORKDIR /app
+COPY --from=uv_bin /uv /bin/uv
 
-# Set PYTHONPATH to allow imports from src and within src
+# Use uv to sync all dependencies including dev/test tools
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-cache --no-install-project
+
+ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH=/app:/app/src
 
-# Copy and install production dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy and install test dependencies
-COPY requirements-test.txt .
-RUN pip install --no-cache-dir -r requirements-test.txt
-
-# Copy application code
 COPY src ./src
 COPY test ./test
-COPY pytest.ini .
+COPY data ./data
+COPY model ./model
 
-# Create symlinks for model and data directories to match expected paths
-RUN ln -s /app/src/model /app/model && \
-    ln -s /app/src/data /app/data
-
-# Default command runs all tests with coverage
 CMD ["pytest"]
