@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 def test_client():
     """Fixture for unit tests using FastAPI TestClient."""
     from src.main import app
+
     return TestClient(app)
 
 
@@ -35,5 +36,5 @@ def sample_home_features():
         "floors": 1.0,
         "sqft_above": 1200.0,
         "sqft_basement": 300.0,
-        "zipcode": "98042"
+        "zipcode": "98042",
     }

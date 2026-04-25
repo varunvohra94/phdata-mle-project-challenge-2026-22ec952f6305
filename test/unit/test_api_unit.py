@@ -1,5 +1,3 @@
-
-
 def test_health_endpoint(test_client):
     """Test the /health endpoint returns correct status."""
     response = test_client.get("/health")
