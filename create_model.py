@@ -1,14 +1,9 @@
 import json
 import pathlib
 import pickle
-from typing import List
-from typing import Tuple
 
 import pandas
-from sklearn import model_selection
-from sklearn import neighbors
-from sklearn import pipeline
-from sklearn import preprocessing
+from sklearn import model_selection, neighbors, pipeline, preprocessing
 
 SALES_PATH = "data/kc_house_data.csv"  # path to CSV with home sale data
 DEMOGRAPHICS_PATH = "data/zipcode_demographics.csv"  # path to CSV with demographics
@@ -21,8 +16,8 @@ OUTPUT_DIR = "model"  # Directory where output artifacts will be saved
 
 
 def load_data(
-    sales_path: str, demographics_path: str, sales_column_selection: List[str]
-) -> Tuple[pandas.DataFrame, pandas.Series]:
+    sales_path: str, demographics_path: str, sales_column_selection: list[str]
+) -> tuple[pandas.DataFrame, pandas.Series]:
     """Load the target and feature data by merging sales and demographics.
 
     Args:

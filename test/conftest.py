@@ -1,7 +1,8 @@
+import os
+
+import httpx
 import pytest
 from fastapi.testclient import TestClient
-import httpx
-import os
 
 
 @pytest.fixture

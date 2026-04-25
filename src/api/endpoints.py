@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 import json
 import pickle
+
 import pandas as pd
+from fastapi import APIRouter
+from pydantic import BaseModel
 
 router = APIRouter()
 
