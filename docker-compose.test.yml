@@ -11,7 +11,7 @@ services:
       - ./model:/app/model:ro
       - ./data:/app/data:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 5s
       timeout: 3s
       retries: 5
