@@ -4,6 +4,7 @@ import pickle
 
 import pandas
 from sklearn import model_selection, neighbors, pipeline, preprocessing
+from sklearn.impute import KNNImputer
 
 SALES_PATH = "data/kc_house_data.csv"  # path to CSV with home sale data
 DEMOGRAPHICS_PATH = "data/zipcode_demographics.csv"  # path to CSV with demographics
@@ -64,7 +65,9 @@ def main():
     )
 
     model = pipeline.make_pipeline(
-        preprocessing.RobustScaler(), neighbors.KNeighborsRegressor()
+        KNNImputer(n_neighbors=5, weights="distance"),
+        preprocessing.RobustScaler(),
+        neighbors.KNeighborsRegressor(),
     ).fit(x_train, y_train)
 
     output_dir = pathlib.Path(OUTPUT_DIR)

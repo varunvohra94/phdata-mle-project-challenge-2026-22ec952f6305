@@ -17,10 +17,13 @@ dependencies = [
 dev = [
     "httpx>=0.24.0",
     "hypothesis>=6.82.0",
+    "ipykernel>=7.2.0",
+    "matplotlib>=3.10.9",
     "pre-commit>=4.6.0",
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "ruff>=0.15.11",
+    "seaborn>=0.13.2",
 ]
 
 [tool.ruff]

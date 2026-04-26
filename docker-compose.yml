@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./model:/app/model:ro
+      - ./data:/app/data:ro
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    environment:
+      # You can add GOOGLE_CLOUD_PROJECT here for Vertex AI integration if needed
+      ## TODO: Remove if not using Vertex AI
+      - PORT=8000
+    networks:
+      - local-network
+
+networks:
+  local-network:
+    driver: bridge

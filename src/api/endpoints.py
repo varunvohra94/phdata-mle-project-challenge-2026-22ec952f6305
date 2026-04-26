@@ -9,13 +9,13 @@ router = APIRouter()
 
 
 class HomeFeatures(BaseModel):
-    bedrooms: int
-    bathrooms: float
-    sqft_living: float
-    sqft_lot: float
-    floors: float
-    sqft_above: float
-    sqft_basement: float
+    bedrooms: int | None = None
+    bathrooms: float | None = None
+    sqft_living: float | None = None
+    sqft_lot: float | None = None
+    floors: float | None = None
+    sqft_above: float | None = None
+    sqft_basement: float | None = None
     zipcode: str
 
 
@@ -37,7 +37,7 @@ async def predict(home_features: HomeFeatures):
     with open("model/model_features.json") as features_file:
         model_features = json.load(features_file)
 
-    input_data = pd.DataFrame([home_features.dict()])
+    input_data = pd.DataFrame([home_features.model_dump()])
 
     # Load demographic data
     demographics = pd.read_csv("data/zipcode_demographics.csv", dtype={"zipcode": str})
