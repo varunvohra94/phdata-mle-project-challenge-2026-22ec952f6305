@@ -34,9 +34,10 @@ clean:
 
 # Run the API locally for development/demo
 run-local:
-	@echo "--- Starting Local API via Docker Compose ---"
+	@echo "--- Starting Local API and Locust UI via Docker Compose ---"
 	docker-compose up --build -d
 	@echo "API is running at http://localhost:8000"
+	@echo "Locust Load Testing UI is running at http://localhost:8089"
 
 # Stop the local API
 stop-local:

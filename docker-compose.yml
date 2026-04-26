@@ -23,6 +23,19 @@ services:
     networks:
       - local-network
 
+  locust:
+    image: locustio/locust
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./locustfile.py:/mnt/locust/locustfile.py
+    command: -f /mnt/locust/locustfile.py --host http://api:8000
+    networks:
+      - local-network
+    depends_on:
+      api:
+        condition: service_healthy
+
 networks:
   local-network:
     driver: bridge
