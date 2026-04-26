@@ -1,3 +1,6 @@
+import json
+import pickle
+
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -17,7 +20,7 @@ class HomeFeatures(BaseModel):
 
 
 @router.get("/health")
-async def health_check():
+def health_check():
     """
     Health check endpoint for container orchestration.
     Returns 200 if API is ready to accept requests.
@@ -26,7 +29,7 @@ async def health_check():
 
 
 @router.post("/predict")
-async def predict(request: Request, home_features: HomeFeatures):
+def predict(request: Request, home_features: HomeFeatures):
     # Access artifacts from application state loaded during lifespan
     model = request.app.state.model
     model_features = request.app.state.features
@@ -49,6 +52,41 @@ async def predict(request: Request, home_features: HomeFeatures):
 
     # Convert to DataFrame (or numpy array) for the scikit-learn pipeline
     input_data = pd.DataFrame([row])
+
+    # Make prediction
+    prediction = model.predict(input_data)
+
+    return {"predicted_price": float(prediction[0])}
+
+
+@router.post("/predict/legacy")
+def predict_legacy(home_features: HomeFeatures):
+    """
+    Legacy prediction endpoint that loads everything from disk for every request.
+    Preserved specifically for live performance benchmarking and demonstration purposes.
+    """
+    # Load the model and features
+    with open("model/model.pkl", "rb") as model_file:
+        model = pickle.load(model_file)
+
+    with open("model/model_features.json") as features_file:
+        model_features = json.load(features_file)
+
+    input_data = pd.DataFrame([home_features.model_dump()])
+
+    # Load demographic data
+    demographics = pd.read_csv("data/zipcode_demographics.csv", dtype={"zipcode": str})
+    demographic_info = (
+        demographics[demographics["zipcode"] == home_features.zipcode]
+        .drop(columns="zipcode")
+        .reset_index(drop=True)
+    )
+
+    # Combine input data with demographic data
+    input_data = pd.concat([input_data, demographic_info], axis=1)
+
+    # Ensure the input data has the correct features
+    input_data = input_data[model_features]
 
     # Make prediction
     prediction = model.predict(input_data)
