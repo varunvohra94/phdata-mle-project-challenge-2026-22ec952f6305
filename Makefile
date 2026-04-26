@@ -1,4 +1,4 @@
-.PHONY: test-build test-unit test-integration test-all clean help run-local stop-local demo-predict
+.PHONY: test-build test-unit test-integration test-all clean run-local stop-local demo-predict help
 
 # Build the test Docker image
 test-build:
