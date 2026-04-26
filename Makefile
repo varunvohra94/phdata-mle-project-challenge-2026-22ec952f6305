@@ -1,4 +1,4 @@
-.PHONY: test-build test-unit test-integration test-all clean help
+.PHONY: test-build test-unit test-integration test-all clean help run-local stop-local demo-predict
 
 # Build the test Docker image
 test-build:
@@ -29,7 +29,27 @@ test-all: test-build
 # Clean up containers and test artifacts
 clean:
 	docker-compose -f docker-compose.test.yml down -v
+	docker-compose down -v
 	rm -rf test-results/*
+
+# Run the API locally for development/demo
+run-local:
+	@echo "--- Starting Local API via Docker Compose ---"
+	docker-compose up --build -d
+	@echo "API is running at http://localhost:8000"
+
+# Stop the local API
+stop-local:
+	@echo "--- Stopping Local API ---"
+	docker-compose down
+
+# Send a sample prediction request with missing values
+demo-predict:
+	@echo "--- Sending Sample Prediction Request with missing values ---"
+	curl -X POST "http://localhost:8000/predict" \
+		-H "Content-Type: application/json" \
+		-d '{"bedrooms": 4, "bathrooms": null, "sqft_living": 1680, "sqft_lot": null, "floors": 1.5, "sqft_above": 1680, "sqft_basement": 0, "zipcode": "98118"}'
+	@echo "\n"
 
 # Display help information
 help:
@@ -40,11 +60,15 @@ help:
 	@echo "  test-unit         - Run unit tests only (fast)"
 	@echo "  test-integration  - Run integration tests with Docker Compose"
 	@echo "  test-all          - Run all tests (unit + integration)"
+	@echo "  run-local         - Run the API locally in the background"
+	@echo "  stop-local        - Stop the locally running API"
+	@echo "  demo-predict      - Send a sample prediction request to the local API"
 	@echo "  clean             - Remove containers and test artifacts"
 	@echo "  help              - Display this help message"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make test-unit              # Quick unit tests"
 	@echo "  make test-integration       # Full integration tests"
-	@echo "  make test-all               # Complete test suite"
+	@echo "  make run-local              # Start the app for live demo"
+	@echo "  make demo-predict           # Execute sample prediction"
 	@echo "  make clean                  # Clean up after tests"
