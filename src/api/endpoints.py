@@ -1,8 +1,5 @@
-import json
-import pickle
-
 import pandas as pd
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -29,32 +26,31 @@ async def health_check():
 
 
 @router.post("/predict")
-async def predict(home_features: HomeFeatures):
-    # Load the model and features
-    with open("model/model.pkl", "rb") as model_file:
-        model = pickle.load(model_file)
+async def predict(request: Request, home_features: HomeFeatures):
+    # Access artifacts from application state loaded during lifespan
+    model = request.app.state.model
+    model_features = request.app.state.features
+    demographics = request.app.state.demographics
 
-    with open("model/model_features.json") as features_file:
-        model_features = json.load(features_file)
+    zipcode = home_features.zipcode
+    if zipcode not in demographics:
+        raise HTTPException(
+            status_code=400, detail=f"No demographic data found for zipcode: {zipcode}"
+        )
 
-    input_data = pd.DataFrame([home_features.model_dump()])
+    # Convert incoming payload to a dictionary
+    input_dict = home_features.model_dump()
 
-    # Load demographic data
-    demographics = pd.read_csv("data/zipcode_demographics.csv", dtype={"zipcode": str})
-    demographic_info = (
-        demographics[demographics["zipcode"] == home_features.zipcode]
-        .drop(columns="zipcode")
-        .reset_index(drop=True)
-    )
+    # O(1) dictionary lookup to merge demographic data instantly
+    input_dict.update(demographics[zipcode])
 
-    # Combine input data with demographic data
-    input_data = pd.concat([input_data, demographic_info], axis=1)
-    print(input_data)
+    # Construct the final row matching the exact feature order expected by the model
+    row = {feature: input_dict.get(feature) for feature in model_features}
 
-    # Ensure the input data has the correct features
-    input_data = input_data[model_features]
+    # Convert to DataFrame (or numpy array) for the scikit-learn pipeline
+    input_data = pd.DataFrame([row])
 
     # Make prediction
     prediction = model.predict(input_data)
 
-    return {"predicted_price": prediction[0]}
+    return {"predicted_price": float(prediction[0])}
