@@ -72,6 +72,25 @@ Run unit tests locally (builds a test Docker image and runs the suite):
 make test-unit
 ```
 
+## 📈 Load Testing with Locust
+
+This project includes a fully configured [Locust](https://locust.io/) setup to simulate real-world traffic and evaluate the performance of the prediction endpoint under stress.
+
+### How to Run the Load Test
+1. Start the system via Docker Compose (this automatically starts the Locust container):
+   ```bash
+   make run-local
+   ```
+2. Open the Locust web interface in your browser at `http://localhost:8089`.
+3. In the Locust UI, configure the test:
+   - **Number of users**: (e.g., `100`)
+   - **Spawn rate**: (e.g., `10` users per second)
+   - **Host**: `http://api:8000` *(This points to the internal API container inside the Docker network)*
+4. Click **Start swarming** to begin the test.
+
+### What It Tests
+The `locustfile.py` script defines a simulated user that continuously sends POST requests to the `/predict` endpoint with semi-randomized, realistic payload permutations (including missing values). This allows you to observe real-time latency charts, throughput metrics, and ensure the KNN imputer handles heavy concurrent traffic without bottlenecks.
+
 ## 📜 Logging & Observability
 
 The application uses structured Python logging. When running `make run-local`, `make batch-predict`, or training the model, you will see a detailed, microsecond-accurate narrative of the system's execution directly in the console. This includes model loading times, data enrichment steps, and request processing metrics.
