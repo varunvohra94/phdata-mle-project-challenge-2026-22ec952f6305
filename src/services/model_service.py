@@ -1,9 +1,12 @@
 """Service for loading and providing access to model artifacts."""
 
 import json
+import logging
 import pickle
 
 import pandas as pd
+
+logger = logging.getLogger("api.model_service")
 
 
 class ModelService:
@@ -24,8 +27,11 @@ class ModelService:
         Returns:
             The deserialized sklearn Pipeline object.
         """
+        logger.debug(f"Reading model artifact from {path}...")
         with open(path, "rb") as f:
-            return pickle.load(f)
+            model = pickle.load(f)
+            logger.debug("Model artifact loaded successfully.")
+            return model
 
     @staticmethod
     def load_features(path: str) -> list[str]:
