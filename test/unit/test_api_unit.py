@@ -1,3 +1,6 @@
+"""Unit tests for the prediction API."""
+
+
 def test_health_endpoint(test_client):
     """Test the /health endpoint returns correct status."""
     response = test_client.get("/health")
@@ -17,9 +20,7 @@ def test_predict_endpoint_valid_input(test_client, sample_home_features):
 
 
 def test_predict_endpoint_missing_values(test_client, sample_home_features):
-    """
-    Test that the /predict endpoint correctly handles missing values via KNNImputer.
-    """
+    """Test that /predict handles missing values via KNNImputer."""
     # Introduce missing values for a few features
     sample_home_features["bathrooms"] = None
     sample_home_features["sqft_lot"] = None
@@ -32,21 +33,16 @@ def test_predict_endpoint_missing_values(test_client, sample_home_features):
 
 
 def test_imputation_preserves_non_null(test_client, sample_home_features):
-    """
-    Test that the KNNImputer step in the pipeline does not alter non-null features.
-    """
-    import json
-    import pickle
-
+    """Test that KNNImputer does not alter non-null features."""
     import numpy as np
     import pandas as pd
 
-    with open("model/model.pkl", "rb") as f:
-        model = pickle.load(f)
-    with open("model/model_features.json") as f:
-        features = json.load(f)
+    # Access model artifacts from the app's service layer (loaded during lifespan)
+    service = test_client.app.state.prediction_service
+    model = service.model
+    features = service.features
 
-    # We will simulate the input DataFrame before and after imputation
+    # Build input DataFrame matching the model's feature order
     df = pd.DataFrame([sample_home_features])
 
     demographics = pd.read_csv("data/zipcode_demographics.csv", dtype={"zipcode": str})
@@ -58,10 +54,10 @@ def test_imputation_preserves_non_null(test_client, sample_home_features):
     df = pd.concat([df, demographic_info], axis=1)
     df = df[features]
 
-    # df1 is completely full
+    # df_full has no missing values
     df_full = df.copy()
 
-    # df2 has some missing values
+    # df_missing has some missing values
     df_missing = df.copy()
     df_missing.loc[0, "sqft_lot"] = np.nan
     df_missing.loc[0, "bathrooms"] = np.nan
