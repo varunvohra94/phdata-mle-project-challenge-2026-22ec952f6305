@@ -72,6 +72,16 @@ Run unit tests locally (builds a test Docker image and runs the suite):
 make test-unit
 ```
 
+Run integration tests (tests against a real running API container via Docker Compose):
+```bash
+make test-integration
+```
+
+Run all tests (executes both unit and integration tests):
+```bash
+make test-all
+```
+
 ## 📈 Load Testing with Locust
 
 This project includes a fully configured [Locust](https://locust.io/) setup to simulate real-world traffic and evaluate the performance of the prediction endpoint under stress.
