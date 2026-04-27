@@ -1,4 +1,4 @@
-.PHONY: test-build test-unit test-integration test-all clean run-local stop-local demo-predict help
+.PHONY: test-build test-unit test-integration test-all clean run-local stop-local demo-predict batch-predict help
 
 # Build the test Docker image
 test-build:
@@ -52,6 +52,11 @@ demo-predict:
 		-d '{"bedrooms": 4, "bathrooms": null, "sqft_living": 1680, "sqft_lot": null, "floors": 1.5, "sqft_above": 1680, "sqft_basement": 0, "zipcode": "98118"}'
 	@echo "\n"
 
+# Run batch predictions against the API using the future unseen examples CSV
+batch-predict:
+	@echo "--- Running Batch Predictions ---"
+	uv run python batch_predict.py
+
 # Display help information
 help:
 	@echo "Docker-Based Testing Makefile"
@@ -64,6 +69,7 @@ help:
 	@echo "  run-local         - Run the API locally in the background"
 	@echo "  stop-local        - Stop the locally running API"
 	@echo "  demo-predict      - Send a sample prediction request to the local API"
+	@echo "  batch-predict     - Run predictions against data/future_unseen_examples.csv"
 	@echo "  clean             - Remove containers and test artifacts"
 	@echo "  help              - Display this help message"
 	@echo ""
@@ -72,4 +78,5 @@ help:
 	@echo "  make test-integration       # Full integration tests"
 	@echo "  make run-local              # Start the app for live demo"
 	@echo "  make demo-predict           # Execute sample prediction"
+	@echo "  make batch-predict          # Execute batch predictions from CSV"
 	@echo "  make clean                  # Clean up after tests"
