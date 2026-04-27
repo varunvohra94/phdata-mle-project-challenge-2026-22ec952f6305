@@ -1,279 +1,96 @@
-# FastAPI Machine Learning Model Deployment
+# Housing Price Prediction API 
 
-This project implements a RESTful API using FastAPI to deploy a machine learning model for predicting home prices based on various features. The model is trained on real estate data and can provide predictions based on user input.
+This project implements a RESTful API using FastAPI to serve a machine learning model for predicting home prices based on real estate features and demographic data. 
 
-## Project Structure
+The system has been heavily refactored to use an **Object-Oriented Architecture**, centralized configuration, structured logging, and robust testing to adhere to software engineering and MLOps best practices.
 
-```
-mle-project-challenge-2026
-├── src
-│   ├── main.py                # Entry point for the FastAPI application
-│   ├── api
-│   │   └── endpoints.py       # API endpoints for predictions
-│   ├── model
-│   │   ├── model.pkl          # Serialized machine learning model
-│   │   └── model_features.json # Features required for predictions
-│   ├── data
-│   │   ├── kc_house_data.csv  # Training data for the model
-│   │   ├── zipcode_demographics.csv # Demographic data for predictions
-│   │   └── future_unseen_examples.csv # Examples for testing the API
-│   └── utils
-│       └── loader.py          # Utility functions for loading the model
-├── requirements.txt            # Project dependencies
-├── Dockerfile                  # Docker instructions for deployment
-├── README.md                   # Project documentation
-└── test
-    └── test_api.py            # Test cases for the API
-```
+## 🏗️ Project Architecture
 
-## Setup Instructions
+We have modularized the system into distinct domains. See the detailed documentation inside each directory to understand the design choices and improvements:
+
+*   [`src/README.md`](src/README.md): Core application logic and configuration.
+*   [`src/api/README.md`](src/api/README.md): API routing and endpoints (includes details on **performance improvements**).
+*   [`src/services/README.md`](src/services/README.md): Business logic layer (Model & Prediction services).
+*   [`model/README.md`](model/README.md): ML artifacts and training pipeline (includes details on **KNN Imputation**).
+
+## 🚀 Getting Started
 
 ### Prerequisites
+*   Docker & Docker Compose
+*   [uv](https://github.com/astral-sh/uv) (An extremely fast Python package installer and resolver)
+*   Python 3.13+
 
-- Docker installed on your system
-- Git (for cloning the repository)
-
-### Step 1: Clone the Repository
-
+### 1. Local Development Setup
+Clone the repository and install dependencies using `uv`:
 ```bash
 git clone <repository-url>
 cd mle-project-challenge-2026
+uv sync
 ```
 
-### Step 2: Generate Model Artifacts (First Time Only)
-
-Before running the API, you need to generate the model files. This only needs to be done once, or when you want to retrain the model.
-
-**Build the model creation Docker image:**
+### 2. Train the Model
+Before running the API, you need to generate the model artifacts (`model.pkl` and `model_features.json`).
 ```bash
-docker build -f src/model/Dockerfile -t create-model .
+uv run python create_model.py
 ```
+*This script will load the data, handle missing values via KNN Imputation, train the model, evaluate it on a holdout test set, and export the artifacts to the `model/` directory.*
 
-**Run the container to generate model artifacts:**
+### 3. Run the API (Live Demo)
+Start the FastAPI application and Locust load testing UI via Docker Compose:
 ```bash
-docker run --rm -v "$(pwd)/src/model:/app/model" create-model
+make run-local
 ```
+*   **API**: `http://localhost:8000` (Swagger UI at `http://localhost:8000/docs`)
+*   **Locust UI**: `http://localhost:8089`
 
-This will create `model.pkl` and `model_features.json` in the `src/model/` directory.
+### 4. Test Predictions
+You can test the system in two ways:
 
-### Step 3: Build and Run the API
-
-**Build the API Docker image:**
+**Single Request:**
 ```bash
-docker build -t mle-project-challenge-2026 .
+make demo-predict
 ```
+*Sends a sample payload (with missing values) via `curl` to demonstrate the model's robustness.*
 
-**Run the API container:**
+**Batch Prediction:**
 ```bash
-docker run -d -p 8000:8000 --name housing-api mle-project-challenge-2026
+make batch-predict
 ```
+*Executes `batch_predict.py`, which reads unseen data from `data/future_unseen_examples.csv` and iteratively queries the API. This is excellent for demonstrating logging and latency.*
 
-### Step 4: Access the API
-
-Open your browser and go to `http://127.0.0.1:8000/docs` to view the interactive API documentation.
-
-### Managing the Container
-
-**Stop the container:**
+### 5. Stop the System
 ```bash
-docker stop housing-api
+make stop-local
 ```
 
-**Start the container again:**
-```bash
-docker start housing-api
-```
+## 🧪 Testing
 
-**Remove the container:**
-```bash
-docker rm housing-api
-```
+We use `pytest` for unit testing the API and its components. The tests use the FastAPI `TestClient` and leverage the OOP service layer.
 
-**View container logs:**
-```bash
-docker logs housing-api
-```
-
-## Usage
-
-To get predictions from the model, send a POST request to the `/predict` endpoint with the required features in JSON format. The API will return the predicted home price along with any additional metadata.
-
-## Testing
-
-This project uses Docker-based testing to ensure environment consistency between testing and production. All tests run inside Docker containers, eliminating "works on my machine" issues.
-
-### Quick Start
-
-Run unit tests (fast, recommended for development):
+Run unit tests locally (builds a test Docker image and runs the suite):
 ```bash
 make test-unit
 ```
 
-Run integration tests (full environment):
-```bash
-make test-integration
-```
+## 📈 Load Testing with Locust
 
-Run all tests:
-```bash
-make test-all
-```
+This project includes a fully configured [Locust](https://locust.io/) setup to simulate real-world traffic and evaluate the performance of the prediction endpoint under stress.
 
-### Test Types
+### How to Run the Load Test
+1. Start the system via Docker Compose (this automatically starts the Locust container):
+   ```bash
+   make run-local
+   ```
+2. Open the Locust web interface in your browser at `http://localhost:8089`.
+3. In the Locust UI, configure the test:
+   - **Number of users**: (e.g., `100`)
+   - **Spawn rate**: (e.g., `10` users per second)
+   - **Host**: `http://api:8000` *(This points to the internal API container inside the Docker network)*
+4. Click **Start swarming** to begin the test.
 
-**Unit Tests** (`test/unit/`)
-- Use FastAPI TestClient for in-process testing
-- No external dependencies or containers required
-- Fast execution (typically under 30 seconds)
-- Ideal for rapid development iteration
+### What It Tests
+The `locustfile.py` script defines a simulated user that continuously sends POST requests to the `/predict` endpoint with semi-randomized, realistic payload permutations (including missing values). This allows you to observe real-time latency charts, throughput metrics, and ensure the KNN imputer handles heavy concurrent traffic without bottlenecks.
 
-**Integration Tests** (`test/integration/`)
-- Test against a real running API container
-- Verify end-to-end functionality via HTTP requests
-- Ensure Docker networking and orchestration work correctly
-- More comprehensive but slower execution
+## 📜 Logging & Observability
 
-### Running Tests
-
-#### Unit Tests Only
-
-```bash
-make test-unit
-```
-
-This command:
-- Builds the test Docker image
-- Runs only tests in `test/unit/` directory
-- Generates coverage reports
-- Completes quickly without starting the full API container
-
-#### Integration Tests Only
-
-```bash
-make test-integration
-```
-
-This command:
-- Builds both API and test containers using Docker Compose
-- Starts the API container and waits for health check
-- Runs tests in `test/integration/` directory
-- Automatically stops and removes containers when complete
-
-#### All Tests
-
-```bash
-make test-all
-```
-
-Runs both integration and unit tests for comprehensive validation.
-
-### Viewing Coverage Reports
-
-After running tests, coverage reports are generated in the `test-results/` directory:
-
-**HTML Coverage Report:**
-```bash
-open test-results/coverage/index.html
-```
-
-**Terminal Coverage Summary:**
-Coverage is automatically displayed in the terminal after test execution.
-
-### Running Specific Tests
-
-Run a specific test file:
-```bash
-docker run --rm ml-api-test pytest test/unit/test_api_unit.py -v
-```
-
-Run a specific test function:
-```bash
-docker run --rm ml-api-test pytest test/unit/test_api_unit.py::test_predict_endpoint -v
-```
-
-Run tests matching a pattern:
-```bash
-docker run --rm ml-api-test pytest -k "predict" -v
-```
-
-### Troubleshooting
-
-**Issue: "Cannot connect to the Docker daemon"**
-
-Solution: Ensure Docker is running on your system.
-```bash
-docker ps  # Should list running containers without error
-```
-
-**Issue: Integration tests fail with connection errors**
-
-Solution: Check if the API container is healthy.
-```bash
-docker-compose -f docker-compose.test.yml up
-# In another terminal:
-docker-compose -f docker-compose.test.yml ps
-docker-compose -f docker-compose.test.yml logs api
-```
-
-**Issue: Tests pass locally but fail in Docker**
-
-Solution: This usually indicates environment differences. Check:
-- Model artifacts exist in `model/` directory
-- Data files exist in `data/` directory
-- All dependencies are listed in `requirements.txt`
-
-**Issue: "Port 8000 already in use"**
-
-Solution: Stop any running containers or services using port 8000.
-```bash
-docker-compose -f docker-compose.test.yml down
-docker stop housing-api  # If the main API is running
-```
-
-**Issue: Test results not appearing in `test-results/` directory**
-
-Solution: Ensure the directory exists and has proper permissions.
-```bash
-mkdir -p test-results
-chmod 755 test-results
-```
-
-**Issue: Tests are very slow**
-
-Solution: Run unit tests only for faster feedback during development.
-```bash
-make test-unit  # Much faster than integration tests
-```
-
-**Issue: "Image not found" errors**
-
-Solution: Build the test image explicitly.
-```bash
-make test-build
-```
-
-### Cleaning Up
-
-Remove test containers and artifacts:
-```bash
-make clean
-```
-
-This removes:
-- All Docker containers created by docker-compose.test.yml
-- All test result files and coverage reports
-
-### Development Workflow
-
-For rapid development iteration:
-
-1. Make code changes in `src/` or test changes in `test/`
-2. Run unit tests: `make test-unit`
-3. Fix any issues and repeat
-4. Before committing, run full suite: `make test-all`
-
-The Docker setup mounts source code as volumes, so you don't need to rebuild containers for every change during integration testing.
-
-## Feedback
-
-We welcome any feedback regarding the project or the interview process. Your insights are valuable to us as we strive to improve the experience for future candidates.
+The application uses structured Python logging. When running `make run-local`, `make batch-predict`, or training the model, you will see a detailed, microsecond-accurate narrative of the system's execution directly in the console. This includes model loading times, data enrichment steps, and request processing metrics.
