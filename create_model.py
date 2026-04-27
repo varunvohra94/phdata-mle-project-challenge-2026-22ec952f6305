@@ -8,12 +8,18 @@ Usage:
 """
 
 import json
+import logging
 import pathlib
 
 import pandas as pd
 from sklearn import model_selection, neighbors, pipeline, preprocessing
 from sklearn.impute import KNNImputer
 from sklearn.metrics import mean_absolute_error, r2_score, root_mean_squared_error
+
+from src.config import setup_logging
+
+setup_logging()
+logger = logging.getLogger("api.create_model")
 
 
 class ModelTrainer:
@@ -58,17 +64,22 @@ class ModelTrainer:
         Returns:
             Tuple of (features DataFrame, target Series).
         """
+        logger.info(f"Loading sales data from {self._sales_path}")
         data = pd.read_csv(
             self._sales_path,
             usecols=self.SALES_COLUMN_SELECTION,
             dtype={"zipcode": str},
         )
+
+        logger.info(f"Loading demographics from {self._demographics_path}")
         demographics = pd.read_csv(self._demographics_path, dtype={"zipcode": str})
 
+        logger.info("Merging sales data with demographics...")
         merged = data.merge(demographics, how="left", on="zipcode").drop(
             columns="zipcode"
         )
         y = merged.pop("price")
+        logger.info(f"Loaded {len(merged)} records successfully.")
         return merged, y
 
     def build_pipeline(self) -> pipeline.Pipeline:
@@ -97,7 +108,10 @@ class ModelTrainer:
         Returns:
             The fitted Pipeline.
         """
-        return model.fit(x_train, y_train)
+        logger.info("Fitting the pipeline on training data...")
+        model.fit(x_train, y_train)
+        logger.info("Pipeline training complete.")
+        return model
 
     def evaluate(
         self, model: pipeline.Pipeline, x_test: pd.DataFrame, y_test: pd.Series
@@ -142,21 +156,30 @@ class ModelTrainer:
 
     def run(self) -> None:
         """Execute the full training lifecycle."""
+        logger.info("Starting model training pipeline...")
         x, y = self.load_data()
+
         x_train, x_test, y_train, y_test = model_selection.train_test_split(
             x, y, random_state=42
+        )
+        logger.info(
+            f"Data split: {len(x_train)} training samples, {len(x_test)} test samples."
         )
 
         model = self.build_pipeline()
         model = self.train(model, x_train, y_train)
 
+        logger.info("Evaluating model on test data...")
         metrics = self.evaluate(model, x_test, y_test)
-        print(f"RMSE: {metrics['rmse']:.2f}")
-        print(f"MAE:  {metrics['mae']:.2f}")
-        print(f"R²:   {metrics['r2']:.4f}")
 
+        logger.info(
+            f"Evaluation Metrics | RMSE: {metrics['rmse']:.2f} | "
+            f"MAE: {metrics['mae']:.2f} | R²: {metrics['r2']:.4f}"
+        )
+
+        logger.info("Exporting model artifacts...")
         self.export(model, list(x_train.columns))
-        print(f"Model exported to {self._output_dir}/")
+        logger.info(f"Model exported successfully to {self._output_dir}/")
 
 
 if __name__ == "__main__":

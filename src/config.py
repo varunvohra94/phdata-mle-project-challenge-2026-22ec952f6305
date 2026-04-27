@@ -5,7 +5,18 @@ being scattered as string literals across the codebase.  Values can be
 overridden via environment variables (e.g. MODEL_PATH=/custom/model.pkl).
 """
 
+import logging
+
 from pydantic_settings import BaseSettings
+
+
+def setup_logging():
+    """Configure standard structured logging across the application."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(asctime)s] %(levelname)s [%(name)s]: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
 
 class Settings(BaseSettings):

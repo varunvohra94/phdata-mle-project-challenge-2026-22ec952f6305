@@ -1,7 +1,11 @@
 """Service encapsulating the house price prediction pipeline."""
 
+import logging
+
 import pandas as pd
 from fastapi import HTTPException
+
+logger = logging.getLogger("api.prediction_service")
 
 
 class PredictionService:
@@ -48,12 +52,19 @@ class PredictionService:
         """
         zipcode = home_features["zipcode"]
         self._validate_zipcode(zipcode)
+
+        logger.debug(f"Enriching features with demographics for zipcode {zipcode}")
         enriched = self._enrich_with_demographics(home_features, zipcode)
+
+        logger.debug("Running model on enriched features...")
         return self._run_model(enriched)
 
     def _validate_zipcode(self, zipcode: str) -> None:
         """Raise 400 if the zipcode is not in the demographic dataset."""
         if zipcode not in self._demographics:
+            logger.warning(
+                f"Prediction failed: No demographic data found for zipcode {zipcode}"
+            )
             raise HTTPException(
                 status_code=400,
                 detail=f"No demographic data found for zipcode: {zipcode}",
