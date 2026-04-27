@@ -1,34 +1,35 @@
-import json
-import pickle
+"""FastAPI application entry point.
+
+Configures the application lifecycle, middleware, and routing.
+Model artifacts are loaded once at startup via the service layer.
+"""
+
 import time
 from contextlib import asynccontextmanager
 
-import pandas as pd
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.endpoints import router as api_router
+from config import Settings
+from services.model_service import ModelService
+from services.prediction_service import PredictionService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load model and features once at startup
-    with open("model/model.pkl", "rb") as model_file:
-        app.state.model = pickle.load(model_file)
+    """Load model artifacts at startup, clean up on shutdown."""
+    settings = Settings()
 
-    with open("model/model_features.json") as features_file:
-        app.state.features = json.load(features_file)
+    model = ModelService.load_model(settings.model_path)
+    features = ModelService.load_features(settings.model_features_path)
+    demographics = ModelService.load_demographics(settings.demographics_data_path)
 
-    # Load demographic data and convert to O(1) dictionary
-    demographics = pd.read_csv("data/zipcode_demographics.csv", dtype={"zipcode": str})
-    demographics.set_index("zipcode", inplace=True)
-    app.state.demographics = demographics.to_dict(orient="index")
+    app.state.prediction_service = PredictionService(model, features, demographics)
 
     yield
-    # Clean up state on shutdown
-    app.state.model = None
-    app.state.features = None
-    app.state.demographics = None
+
+    app.state.prediction_service = None
 
 
 app = FastAPI(lifespan=lifespan)
@@ -56,4 +57,5 @@ app.include_router(api_router)
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    settings = Settings()
+    uvicorn.run(app, host=settings.host, port=settings.port)
